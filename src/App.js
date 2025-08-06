@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react"; // ★ 1. useEffectをインポート
+import React, { useState, useCallback, useEffect } from "react";
 import "./App.css";
 import WeatherForm from "./components/WeatherForm";
 import WeatherDisplay from "./components/WeatherDisplay";
@@ -10,11 +10,9 @@ function App() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ★ 2. アプリ起動時にlocalStorageから履歴を読み込む
   const [history, setHistory] = useState(() => {
     try {
       const savedHistory = localStorage.getItem("weatherHistory");
-      // 保存されたデータがあればそれを使い、なければ空の配列で初期化
       return savedHistory ? JSON.parse(savedHistory) : [];
     } catch (error) {
       console.error("Failed to parse history from localStorage", error);
@@ -22,18 +20,15 @@ function App() {
     }
   });
 
-  // ★ 3. historyが更新されるたびに、その内容をlocalStorageに保存する
   useEffect(() => {
     localStorage.setItem("weatherHistory", JSON.stringify(history));
-  }, [history]); // `history`配列が変更された時だけこの処理を実行
+  }, [history]);
 
   const fetchWeather = useCallback(async (targetCity) => {
     if (!targetCity) return;
-
     setLoading(true);
     setWeather(null);
     setError(null);
-
     try {
       const response = await fetch(`https://wttr.in/${targetCity}?format=j1`);
       if (!response.ok) {
@@ -41,7 +36,6 @@ function App() {
       }
       const data = await response.json();
       setWeather(data);
-
       setHistory((prevHistory) => {
         const newHistory = [
           targetCity,
@@ -66,6 +60,11 @@ function App() {
     fetchWeather(historyCity);
   };
 
+  // ★ 1. 履歴を空にする関数を定義
+  const handleClearHistory = () => {
+    setHistory([]);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -79,7 +78,11 @@ function App() {
 
         <WeatherDisplay loading={loading} error={error} weather={weather} />
 
-        <SearchHistory history={history} onHistoryClick={handleHistoryClick} />
+        <SearchHistory
+          history={history}
+          onHistoryClick={handleHistoryClick}
+          onClearHistory={handleClearHistory} // ★ 2. 関数をpropsとして渡す
+        />
       </header>
     </div>
   );
