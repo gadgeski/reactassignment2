@@ -1,20 +1,34 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react"; // ★ 1. useEffectをインポート
 import "./App.css";
 import WeatherForm from "./components/WeatherForm";
 import WeatherDisplay from "./components/WeatherDisplay";
-import SearchHistory from "./components/SearchHistory"; // ★ 1. SearchHistoryをインポート
+import SearchHistory from "./components/SearchHistory";
 
 function App() {
   const [city, setCity] = useState("");
   const [weather, setWeather] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState([]); // ★ 2. 検索履歴を保存するstateを追加
 
-  // ★ 3. 天気取得ロジックを再利用可能な関数に切り出し
-  // useCallbackを使って、不要な再生成を防ぎパフォーマンスを最適化
+  // ★ 2. アプリ起動時にlocalStorageから履歴を読み込む
+  const [history, setHistory] = useState(() => {
+    try {
+      const savedHistory = localStorage.getItem("weatherHistory");
+      // 保存されたデータがあればそれを使い、なければ空の配列で初期化
+      return savedHistory ? JSON.parse(savedHistory) : [];
+    } catch (error) {
+      console.error("Failed to parse history from localStorage", error);
+      return [];
+    }
+  });
+
+  // ★ 3. historyが更新されるたびに、その内容をlocalStorageに保存する
+  useEffect(() => {
+    localStorage.setItem("weatherHistory", JSON.stringify(history));
+  }, [history]); // `history`配列が変更された時だけこの処理を実行
+
   const fetchWeather = useCallback(async (targetCity) => {
-    if (!targetCity) return; // 対象の都市がなければ何もしない
+    if (!targetCity) return;
 
     setLoading(true);
     setWeather(null);
@@ -28,34 +42,28 @@ function App() {
       const data = await response.json();
       setWeather(data);
 
-      // ★ 4. 成功した場合、履歴を更新
       setHistory((prevHistory) => {
-        // 重複を除き、新しい都市を先頭に追加した配列を返す
         const newHistory = [
           targetCity,
           ...prevHistory.filter((c) => c !== targetCity),
         ];
-        // 履歴は最新5件までにする
         return newHistory.slice(0, 5);
       });
     } catch (err) {
       setError(err.message);
-      console.error(err);
     } finally {
       setLoading(false);
     }
-  }, []); // useCallbackの第二引数に空配列を指定し、関数を初回レンダリング時のみ生成
+  }, []);
 
-  // フォーム送信時の処理
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    fetchWeather(city); // 入力されているcityで天気取得
+    fetchWeather(city);
   };
 
-  // 履歴クリック時の処理
   const handleHistoryClick = (historyCity) => {
-    setCity(historyCity); // フォームの入力値も更新
-    fetchWeather(historyCity); // クリックされた都市で天気取得
+    setCity(historyCity);
+    fetchWeather(historyCity);
   };
 
   return (
@@ -66,12 +74,11 @@ function App() {
         <WeatherForm
           city={city}
           setCity={setCity}
-          getWeather={handleFormSubmit} // 渡す関数を更新
+          getWeather={handleFormSubmit}
         />
 
         <WeatherDisplay loading={loading} error={error} weather={weather} />
 
-        {/* ★ 5. SearchHistoryコンポーネントを描画 */}
         <SearchHistory history={history} onHistoryClick={handleHistoryClick} />
       </header>
     </div>
