@@ -4,7 +4,7 @@
 
 このプロジェクトは、React の基本的な概念（コンポーネント、state、props）から、より実践的な機能（API 通信、ローカルストレージへのデータ保存など）までを段階的に学ぶことを目的としています。
 
-## ![React weather app interface](https://i.imgur.com/your-app-image.png)
+## ![React weather app interface]
 
 ## 主な機能
 
